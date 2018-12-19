@@ -1,5 +1,5 @@
 import { 
-    ObjectType, Call,
+    ObjectType, Call, Lambda, Int, Float, Expression,
  } from './types';
 
 export interface DictionaryPair<K, V> {
@@ -151,5 +151,5 @@ export default class MultiDictionary<K, V> {
     }
 }
 
-export type ContextType = ObjectType | string | number | boolean | Call;
+export type ContextType = ObjectType | string | number | boolean | Call | Lambda | Int | Float | Expression;
 export const context = new MultiDictionary<string, ContextType>();

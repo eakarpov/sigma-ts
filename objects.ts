@@ -13,7 +13,8 @@ import {
     ObjectType,
     Parameter,
     Sigma,
-    Type
+    Type,
+    Add,
   } from './types';
 
   export const sigma = new Sigma(
@@ -39,7 +40,7 @@ import {
                         null,
                         [new Function(
                           new Parameter('this', new Call(null, 'x')),
-                          '+',
+                          new Add(),
                           new Parameter('dx')
                         )]
                       )

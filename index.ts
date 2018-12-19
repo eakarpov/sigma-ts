@@ -25,7 +25,6 @@ import {
 import { context, ContextType } from './dictionary';
 
 
-
 function findMethod(object: ObjectType, name: string): Method|Field|undefined {
     for (const method of object.props) {
         if (method.name === name) return method;
@@ -34,7 +33,7 @@ function findMethod(object: ObjectType, name: string): Method|Field|undefined {
 
 function setMethod(ctx: ObjectType, name: Field | Method): ObjectType {
   const res = new ObjectType([]);
-    for (let i = 0; i < ctx.props.length - 1; i++) {
+    for (let i = 0; i < ctx.props.length; i++) {
       if (ctx.props[i].name === name.name) {
           res.props.push(name);
       } else {
@@ -45,7 +44,12 @@ function setMethod(ctx: ObjectType, name: Field | Method): ObjectType {
 }
 
 function evalLambda(body: Lambda, args?: Argument[]): ReturnValue {
-  return 0;
+    body.args.forEach((arg, i) => {
+        if (args && args[i]) {
+            context.set(arg.name, args[i]);
+        }
+    });
+  return evalExpr(body.body);
 }
 
 function evalBody(body: Value, args?: Argument[]): ReturnValue {
@@ -66,7 +70,7 @@ function evalParam(param: Parameter): ReturnValue {
         return methodCall(param.methodCall);
     }
     if (typeof param === 'string') {
-        const res = context.get(param)[0];
+        const res = context.get(param).pop();
         if (res instanceof ObjectType) {
             return res;
         }
@@ -76,18 +80,26 @@ function evalParam(param: Parameter): ReturnValue {
         throw new Error('Not a valid type');
     } else {
       if (param instanceof ObjectType) {
-        return param;
+        return param; 
       }
       if (param instanceof Int || param instanceof Float) {
         return param.value;
       }
-      throw new Error('Not a valid type');
+      return context.get(param.ctx as string).pop() as ReturnValue;
     }
+}
+
+function evalExprBodies(body: ExprBody[]): ReturnValue {
+    let res: ReturnValue = 0;
+    body.forEach(b => {
+        res = evalExprBody(b);
+    });
+    return res;
 }
 
 function getNewMethod(method: Method, ctx: ObjectType): Method {
   if (method.body instanceof Expression) {
-      const body = evalExprBody(method.body.args);
+      const body = evalExprBodies(method.body.args);
       if (body instanceof ObjectType) {
         return new Method(method.name, method.type, method.ctx, body);
       } else {
@@ -99,20 +111,34 @@ function getNewMethod(method: Method, ctx: ObjectType): Method {
   return method;
 }
 
+function c(value: ReturnValue): number {
+    if (value instanceof Int || value instanceof Float) {
+        return value.value;
+    }
+    if (typeof value === 'number') {
+        return value;
+    }
+    return 0;
+}
+
 function evalExprBody(body: ExprBody): ReturnValue {
     if (body instanceof FieldUpdate) {
-        const ctx = context.get(body.ctx || '_')[0];
+        const ctx = context.get(body.ctx || '_').pop();
         if (!(ctx instanceof ObjectType)) throw new Error('Object type is required here');
         const method = findMethod(ctx, body.propName);
         if (method) {
-          const field = new Field(method.name, method.type, body.value);
+          let bd = new Int(0);
+          if (body.value instanceof Expression) {
+              bd = b(evalExpr(body.value));
+          }
+          const field = new Field(method.name, method.type, bd);
           return setMethod(ctx, field);
         } else {
             throw new Error('Method not found');
         }
     }
     if (body instanceof MethodUpdate) {
-      const ctx = context.get(body.ctx || '_')[0];
+      const ctx = context.get(body.ctx || '_').pop();
       if (!(ctx instanceof ObjectType)) throw new Error('Object type is required here');
       const method: Method = findMethod(ctx, body.propName) as Method;
       const newMethod = getNewMethod(method, ctx);
@@ -120,7 +146,7 @@ function evalExprBody(body: ExprBody): ReturnValue {
     }
     if (body instanceof Function) {
        if (body.operand instanceof Add) {
-           return +evalParam(body.arg1) + +evalParam(body.arg2);
+           return c(evalParam(body.arg1)) + c(evalParam(body.arg2));
        }
        return 0;
     }
@@ -131,8 +157,8 @@ function evalExprBody(body: ExprBody): ReturnValue {
 }
 
 function evalExpr(expr: Expression): ReturnValue {
-    const ctx = evalExprBody(expr.args);
-    context.set('_', ctx);
+    const ctx = evalExprBodies(expr.args);
+    context.set(context.get('_default').pop() as string, ctx);
     if (expr.ctx) {
         return evalExpr(expr.ctx);
     }
@@ -166,11 +192,15 @@ function methodCall(methodCall: Call): ReturnValue {
             args.push(b(evalExpr(arg)));
         }
     }
-    const ctx = context.get(methodCall.ctx || '_')[0];
+    const ctx = context.get(context.get('_default').pop() as string || '_').pop();
     if (!(ctx instanceof ObjectType)) throw new Error('Not a context object');
     const methodToExecute = findMethod(ctx, methodCall.name);
     if (methodToExecute) {
       if (methodToExecute instanceof Method) {
+          if (typeof methodToExecute.ctx === 'string') {
+              context.set('_default', methodToExecute.ctx);
+            context.set(methodToExecute.ctx, ctx);
+          }
         return evalBody(methodToExecute.body, args);
       }
       return evalBody(methodToExecute.body);
@@ -179,17 +209,14 @@ function methodCall(methodCall: Call): ReturnValue {
     }
 }
 
-function evalSigma(object: Sigma | ObjectType): ReturnValue {
-    if (object instanceof Sigma) {
-        if (object.objectType instanceof ObjectType) {
-          context.set('_', object.objectType);
-        } else {
-          const ctx = evalSigma(object.objectType);
-          context.set('_', ctx);
-        }
-        return resultOfCall(object.call);
+function evalSigma(object: Sigma | ObjectType, parentCall: CutExpr): ReturnValue {
+    if (object instanceof ObjectType) {
+        context.set('_', object);
+    } else {
+        const ctx = evalSigma(object.objectType, object.call);
+        context.set(context.get('_default').pop() as string || '_', ctx);
     }
-    throw new Error('Not a Sigma');
+    return resultOfCall(parentCall);
 }
 
 function resultOfCall(call: CutExpr): ReturnValue {
@@ -200,7 +227,7 @@ function resultOfCall(call: CutExpr): ReturnValue {
 }
 
 function evalMain(sigma: Sigma): string {
-    const ctx =  evalSigma(sigma.objectType);
+    const ctx =  evalSigma(sigma.objectType, sigma.call);
     context.set('_', ctx);
     const result = resultOfCall(sigma.call);
     return result.toString();
