@@ -31,19 +31,19 @@ import {
                   [new LambdaArg('dx', new Type(['Int']))],
                   new Expression(
                     null,
-                    [new FieldUpdate(
+                    new FieldUpdate(
                       'this',
                       'x',
                       new Type(['Int']),
                       new Expression(
                         null,
-                        [new Function(
+                        new Function(
                           new Parameter('this', new Call(null, 'x')),
                           '+',
-                          new Parameter('dx', null)
-                        )]
+                          new Parameter('dx')
+                        )
                       )
-                    )]
+                    )
                   ),
                 )
               )
@@ -58,112 +58,112 @@ import {
     ),
     new Call(null, 'x')
   );
-  
-  export const sigma2 =
-    new Sigma(
-      new Sigma(
-        new Sigma(
-          new Sigma(
-            new Sigma(
-              new Sigma(
-                new ObjectType([
-                  new Field("arg", new Type(['Real']), new Float(0.0)),
-                  new Field('acc', new Type(['Real']), new Float(0.0)),
-                  new Method('clear', new Type(['Obj']), 'this', new Expression(
-                    new Expression(
-                      new Expression(
-                        null,
-                        [new FieldUpdate('this', 'arg', new Type(['Real']), new Float(0.0))]
-                      ),
-                      [new FieldUpdate(null, 'acc', new Type(['Real']), new Float(0.0))]
-                    ),
-                    [new MethodUpdate(null, 'equals', new Type(['Real']), 'self', new Expression(
-                      null,
-                      [new Call('self', 'arg')]
-                    ))]
-                  )),
-                  new Method('enter', new Type(['Real', 'Obj']), 'this', new Lambda([new LambdaArg('n', new Type(['Real']))], new Expression(
-                    null,
-                    [new FieldUpdate('this', 'arg', new Type(['Real']), new Expression(null, [new Parameter('n', null)]))]
-                  ))),
-                  new Method('add', new Type(['Obj']), 'this', new Expression(
-                    new Expression(
-                      null,
-                      [new FieldUpdate('this', 'acc', new Type(['Real']), new Expression(
-                        null,
-                        [new Call('this', 'equals')]
-                      ))]
-                    ),
-                    [new MethodUpdate(null, 'equals', new Type(['Real']), 'self', new Expression(
-                      null,
-                      [new Function(
-                        new Parameter('self', new Call(null, 'acc')),
-                        '+',
-                        new Parameter('self', new Call(null, 'arg'))
-                      )]
-                    ))]
-                  )),
-                  new Method('sub', new Type(['Obj']), 'this', new Expression(
-                    new Expression(
-                      null,
-                      [new FieldUpdate('this', 'acc', new Type(['Real']), new Expression(
-                        null,
-                        [new Call('this', 'equals')]
-                      ))]
-                    ),
-                    [new MethodUpdate(null, 'equals', new Type(['Real']), 'self', new Expression(
-                      null,
-                      [new Function(
-                        new Parameter('self', new Call(null, 'acc')),
-                        '-',
-                        new Parameter('self', new Call(null, 'arg'))
-                      )]
-                    ))]
-                  )),
-                  new Method('equals', new Type(['Real']), 'this', new Expression(
-                    null,
-                    [new Call('this', 'arg')]
-                  ))
-                ]), new Call(null, 'enter', [new Float(5.0)])
-              ), new Call(null, 'add')
-            ), new Call(null, 'enter', [new Float(3.0)])
-          ), new Call(null, 'sub')
-        ), new Call(null, 'enter', [new Float(-2.2)])
-      ), new Call(null, 'equals')
-    );
-  
-  
-  export const sigma3 = new Sigma(
-    new Sigma(
-      new Sigma(
-        new Sigma(
-          new Sigma(
-            new Sigma(
-              new Sigma(
-                new ObjectType([
-                  new Method('retrieve', new Type(['Obj']), 's', new Expression(
-                    null,
-                    [new Parameter('s', null)]
-                  )),
-                  new Method('backup', new Type(['Obj']), 'b', new Expression(
-                    null,
-                    [new MethodUpdate('b', 'retrieve', new Type(['Obj']), 's', new Expression(
-                      null,
-                      [new Parameter('b', null)]
-                    ))
-                    ]
-                  )),
-                  new Field('value', new Type(['Int']), new Int(10)),
-                ]), new Call(null, 'backup')
-              ), new FieldUpdate(null, 'value', new Type(['Int']), new Int(15))
-            ), new Call(null, 'backup')
-          ), new FieldUpdate(null, 'value', new Type(['Int']), new Int(25))
-        ), new Call(null, 'retrieve')
-      ), new Call(null, 'retrieve')
-    ), new Call(null, 'value')
-  );
-  
-  
+  //
+  // export const sigma2 =
+  //   new Sigma(
+  //     new Sigma(
+  //       new Sigma(
+  //         new Sigma(
+  //           new Sigma(
+  //             new Sigma(
+  //               new ObjectType([
+  //                 new Field("arg", new Type(['Real']), new Float(0.0)),
+  //                 new Field('acc', new Type(['Real']), new Float(0.0)),
+  //                 new Method('clear', new Type(['Obj']), 'this', new Expression(
+  //                   new Expression(
+  //                     new Expression(
+  //                       null,
+  //                       [new FieldUpdate('this', 'arg', new Type(['Real']), new Float(0.0))]
+  //                     ),
+  //                     [new FieldUpdate(null, 'acc', new Type(['Real']), new Float(0.0))]
+  //                   ),
+  //                   [new MethodUpdate(null, 'equals', new Type(['Real']), 'self', new Expression(
+  //                     null,
+  //                     [new Call('self', 'arg')]
+  //                   ))]
+  //                 )),
+  //                 new Method('enter', new Type(['Real', 'Obj']), 'this', new Lambda([new LambdaArg('n', new Type(['Real']))], new Expression(
+  //                   null,
+  //                   [new FieldUpdate('this', 'arg', new Type(['Real']), new Expression(null, [new Parameter('n')]))]
+  //                 ))),
+  //                 new Method('add', new Type(['Obj']), 'this', new Expression(
+  //                   new Expression(
+  //                     null,
+  //                     [new FieldUpdate('this', 'acc', new Type(['Real']), new Expression(
+  //                       null,
+  //                       [new Call('this', 'equals')]
+  //                     ))]
+  //                   ),
+  //                   [new MethodUpdate(null, 'equals', new Type(['Real']), 'self', new Expression(
+  //                     null,
+  //                     [new Function(
+  //                       new Parameter('self', new Call(null, 'acc')),
+  //                       '+',
+  //                       new Parameter('self', new Call(null, 'arg'))
+  //                     )]
+  //                   ))]
+  //                 )),
+  //                 new Method('sub', new Type(['Obj']), 'this', new Expression(
+  //                   new Expression(
+  //                     null,
+  //                     [new FieldUpdate('this', 'acc', new Type(['Real']), new Expression(
+  //                       null,
+  //                       [new Call('this', 'equals')]
+  //                     ))]
+  //                   ),
+  //                   [new MethodUpdate(null, 'equals', new Type(['Real']), 'self', new Expression(
+  //                     null,
+  //                     [new Function(
+  //                       new Parameter('self', new Call(null, 'acc')),
+  //                       '-',
+  //                       new Parameter('self', new Call(null, 'arg'))
+  //                     )]
+  //                   ))]
+  //                 )),
+  //                 new Method('equals', new Type(['Real']), 'this', new Expression(
+  //                   null,
+  //                   [new Call('this', 'arg')]
+  //                 ))
+  //               ]), new Call(null, 'enter', [new Float(5.0)])
+  //             ), new Call(null, 'add')
+  //           ), new Call(null, 'enter', [new Float(3.0)])
+  //         ), new Call(null, 'sub')
+  //       ), new Call(null, 'enter', [new Float(-2.2)])
+  //     ), new Call(null, 'equals')
+  //   );
+  //
+  //
+  // export const sigma3 = new Sigma(
+  //   new Sigma(
+  //     new Sigma(
+  //       new Sigma(
+  //         new Sigma(
+  //           new Sigma(
+  //             new Sigma(
+  //               new ObjectType([
+  //                 new Method('retrieve', new Type(['Obj']), 's', new Expression(
+  //                   null,
+  //                   [new Parameter('s')]
+  //                 )),
+  //                 new Method('backup', new Type(['Obj']), 'b', new Expression(
+  //                   null,
+  //                   [new MethodUpdate('b', 'retrieve', new Type(['Obj']), 's', new Expression(
+  //                     null,
+  //                     [new Parameter('b')]
+  //                   ))
+  //                   ]
+  //                 )),
+  //                 new Field('value', new Type(['Int']), new Int(10)),
+  //               ]), new Call(null, 'backup')
+  //             ), new FieldUpdate(null, 'value', new Type(['Int']), new Int(15))
+  //           ), new Call(null, 'backup')
+  //         ), new FieldUpdate(null, 'value', new Type(['Int']), new Int(25))
+  //       ), new Call(null, 'retrieve')
+  //     ), new Call(null, 'retrieve')
+  //   ), new Call(null, 'value')
+  // );
+  //
+  //
   // const sigma4 = new Sigma(
   //   new ObjectType([
   //       new Method('zero', new Type('Obj'), 'global', new ObjectType(
@@ -215,57 +215,57 @@ import {
   //       )
   //   ]), new Expression(null, new Call(null, 'prog'))
   // );
-  
-  export const sigma4 = new Sigma(
-    new ObjectType(
-      [
-        new Method('zero', new Type(['Obj']), 'global', new ObjectType([
-          new Method('succ', new Type(['Obj']), 'this', new Expression(new Expression(new Expression(null, [
-            new FieldUpdate('this', 'ifzero', new Type(['Obj']), new Expression(null, [
-              new Call('global', 'false')
-            ]))
-          ]), [
-            new FieldUpdate(null, 'pred', new Type(['Obj']), new Expression(null, [new Parameter('this', null)]))
-          ]), [
-            new FieldUpdate(null, 'num', new Type(['Int']), new Expression(null, [
-              new Function(new Parameter('this', new Call(null, 'num')), '+', new Parameter(new Int(1), null))
-            ]))
-          ])),
-          new Field('ifzero', new Type(['Obj']), new Expression(null, [
-            new Call('global', 'true')
-          ])),
-          new Field('num', new Type(['Int']), new Expression(null, [
-            new Parameter(new Int(0), null)
-          ])),
-        ])),
-        new Method('true', new Type(['Obj']), 'global', new ObjectType([
-          new Method('then', new Type(['Obj']), 'this', new Expression(null, [
-            new Parameter('this', null)
-          ])),
-          new Method('val', new Type(['Obj']), 'this', new Expression(null, [
-            new Call('this', 'then')
-          ]))
-        ])),
-        new Method('false', new Type(['Obj']), 'global', new ObjectType([
-          new Method('else', new Type(['Obj']), 'this', new Expression(null, [
-            new Parameter('this', null)
-          ])),
-          new Method('val', new Type(['Obj']), 'this', new Expression(null, [
-            new Call('this', 'else')
-          ]))
-        ])),
-        new Method('prog', new Type(['Int']), 'global', new Expression(null, [
-          new Call('global', 'zero'),
-          new Call(null, 'succ'),
-          new Call(null, 'succ'),
-          new Call(null, 'succ'),
-          new Call(null, 'succ'),
-          new Call(null, 'pred'),
-          new Call(null, 'num')
-        ]))
-      ]), new Call(null, 'prog')
-  );
-  
+  //
+  // export const sigma4 = new Sigma(
+  //   new ObjectType(
+  //     [
+  //       new Method('zero', new Type(['Obj']), 'global', new ObjectType([
+  //         new Method('succ', new Type(['Obj']), 'this', new Expression(new Expression(new Expression(null, [
+  //           new FieldUpdate('this', 'ifzero', new Type(['Obj']), new Expression(null, [
+  //             new Call('global', 'false')
+  //           ]))
+  //         ]), [
+  //           new FieldUpdate(null, 'pred', new Type(['Obj']), new Expression(null, [new Parameter('this')]))
+  //         ]), [
+  //           new FieldUpdate(null, 'num', new Type(['Int']), new Expression(null, [
+  //             new Function(new Parameter('this', new Call(null, 'num')), '+', new Parameter(new Int(1)))
+  //           ]))
+  //         ])),
+  //         new Field('ifzero', new Type(['Obj']), new Expression(null, [
+  //           new Call('global', 'true')
+  //         ])),
+  //         new Field('num', new Type(['Int']), new Expression(null, [
+  //           new Parameter(new Int(0))
+  //         ])),
+  //       ])),
+  //       new Method('true', new Type(['Obj']), 'global', new ObjectType([
+  //         new Method('then', new Type(['Obj']), 'this', new Expression(null, [
+  //           new Parameter('this')
+  //         ])),
+  //         new Method('val', new Type(['Obj']), 'this', new Expression(null, [
+  //           new Call('this', 'then')
+  //         ]))
+  //       ])),
+  //       new Method('false', new Type(['Obj']), 'global', new ObjectType([
+  //         new Method('else', new Type(['Obj']), 'this', new Expression(null, [
+  //           new Parameter('this')
+  //         ])),
+  //         new Method('val', new Type(['Obj']), 'this', new Expression(null, [
+  //           new Call('this', 'else')
+  //         ]))
+  //       ])),
+  //       new Method('prog', new Type(['Int']), 'global', new Expression(null, [
+  //         new Call('global', 'zero'),
+  //         new Call(null, 'succ'),
+  //         new Call(null, 'succ'),
+  //         new Call(null, 'succ'),
+  //         new Call(null, 'succ'),
+  //         new Call(null, 'pred'),
+  //         new Call(null, 'num')
+  //       ]))
+  //     ]), new Call(null, 'prog')
+  // );
+  //
   /*export const sigma5 = new Sigma(new ObjectType([
     new Method('numeral', new Type(['Obj']), 'top', new ObjectType([
       new Method('zero', new Type(['Obj']), 'numeral', new ObjectType([

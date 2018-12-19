@@ -3,22 +3,26 @@ type Optional<T> = T | null;
 export type CutExpr = Call | MethodUpdate | FieldUpdate;
 export type ExprBody = FieldUpdate | MethodUpdate | Function | Parameter | Call;
 export type InputValue = Int | Float;
-type Body = Lambda | ObjectType | Expression;
-type Value = Body | InputValue;
-type ParameterValue = InputValue | string;
-type Argument = Lambda | InputValue | Expression;
-type Operation = Add | Substring | Multiply | Divide;
+export type Body = Lambda | ObjectType | Expression;
+export type Value = Body | InputValue;
+export type ParameterValue = InputValue | string;
+export type Argument = Lambda | InputValue | Expression;
+export type Operation = Add | Substring | Multiply | Divide;
 
 export class Add {}
 export class Substring {}
 export class Multiply {}
 export class Divide {}
 
-export type ReturnValue = number|string|ObjectType;
+export type ReturnValue = number|ObjectType;
 
 export class Parameter {
-  constructor(public ctx: ParameterValue, public methodCall: Optional<Call>) {
+  constructor(public ctx: ParameterValue, public methodCall?: Call) {
   }
+}
+
+export class Closure<T> {
+  constructor(public data: T, public env: Value[]) {}
 }
 
 export class Function {
@@ -46,7 +50,7 @@ export class Field {
 }
 
 export class Method {
-  constructor(public name: string, public type: Type, public ctx: string, public body: Body) {
+  constructor(public name: string, public type: Type, public ctx: string|ObjectType, public body: Body) {
   }
 }
 
@@ -61,7 +65,7 @@ export class MethodUpdate {
 }
 
 export class Call {
-  constructor(public ctx: Optional<string>, public name: string, public args: Optional<Argument[]> = []) {
+  constructor(public ctx: Optional<string>, public name: string, public args: Argument[] = []) {
   }
 }
 
@@ -76,7 +80,7 @@ export class Sigma {
 }
 
 export class Expression {
-  constructor(public ctx: Optional<Expression>, public args: ExprBody[]) {
+  constructor(public ctx: Optional<Expression>, public args: ExprBody) {
   }
 }
 
@@ -90,10 +94,10 @@ export class Float {
   }
 }
 
-export const lazy = function (creator) {
-  let res;
+export const lazy = function (creator: any) {
+  let res: any;
   let processed = false;
-  return function () {
+  return function (this: any) {
     if (processed) return res;
     res = creator.apply(this, arguments);
     processed = true;

@@ -96,7 +96,7 @@ export default class MultiDictionary<K, V> {
     }
 
     get(key: K): V[] {
-        const values: Array<V> = this.dict.get(key);
+        const values: Array<V>|undefined = this.dict.get(key);
         if (isUndefined(values)) {
             return [];
         }
@@ -107,7 +107,7 @@ export default class MultiDictionary<K, V> {
         if (isUndefined(key) || isUndefined(value)) {
             return false;
         }
-        const array: Array<V> = this.dict.get(key);
+        const array: Array<V>|undefined = this.dict.get(key);
         if (isUndefined(array)) {
             this.dict.set(key, [value]);
             return true;
@@ -151,5 +151,5 @@ export default class MultiDictionary<K, V> {
     }
 }
 
-type ContextType = ObjectType | string | number | boolean | Call;
+export type ContextType = ObjectType | string | number | boolean | Call;
 export const context = new MultiDictionary<string, ContextType>();
