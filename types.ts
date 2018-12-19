@@ -80,7 +80,7 @@ export class Sigma {
 }
 
 export class Expression {
-  constructor(public ctx: Optional<Expression>, public args: ExprBody) {
+  constructor(public ctx: Optional<Expression>, public args: Array<ExprBody>) {
   }
 }
 
