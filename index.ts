@@ -70,7 +70,7 @@ function evalParam(param: Parameter): ReturnValue {
         return methodCall(param.methodCall);
     }
     if (typeof param === 'string') {
-        const res = context.get(param).pop();
+        const res = context.get(param)[context.get(param).length - 1];
         if (res instanceof ObjectType) {
             return res;
         }
@@ -85,7 +85,7 @@ function evalParam(param: Parameter): ReturnValue {
         if (param instanceof Int || param instanceof Float) {
             return param.value;
         }
-        return context.get(param.ctx as string).pop() as ReturnValue;
+        return context.get(param.ctx as string)[context.get(param.ctx as string).length - 1] as ReturnValue;
     }
 }
 
@@ -127,14 +127,14 @@ function validateArgs(type: Array<string|Type>, mtd: Call) {
     for (const t of type) {
         if (t === 'Obj') continue;
         if (t === 'Int') {
-            const arg = innerArgs.pop();
+            const arg = innerArgs[innerArgs.length - 1];
             if (arg === void 0) throw new Error(`not enough arguments for method ${mtd.name}`);
             if (!(arg instanceof Int && Number.isInteger(arg.value))) {
                 throw new Error(`${arg} is not of a required [${t}] type`);
             }
         }
         if (t === 'Real') {
-            const arg = innerArgs.pop();
+            const arg = innerArgs[innerArgs.length - 1];
             if (arg === void 0) throw new Error(`not enough arguments for method ${mtd.name}`);
             if (!(arg instanceof Float && !Number.isNaN(Number.parseFloat(arg.value.toString())))) {
                 throw new Error(`${arg} is not of a required [${t}] type`);
@@ -151,7 +151,7 @@ function validateType(type: Array<string|Type>, args: Array<string|Type>) {
 
 function evalExprBody(body: ExprBody): ReturnValue {
     if (body instanceof FieldUpdate) {
-        const ctx = context.get(body.ctx || '_').pop();
+        const ctx = context.get(body.ctx || '_')[context.get(body.ctx || '_').length - 1];
         if (!(ctx instanceof ObjectType)) throw new Error('Object type is required here');
         const method = findMethod(ctx, body.propName);
         if (method) {
@@ -168,7 +168,7 @@ function evalExprBody(body: ExprBody): ReturnValue {
         }
     }
     if (body instanceof MethodUpdate) {
-        const ctx = context.get(body.ctx || '_').pop();
+        const ctx = context.get(body.ctx || '_')[context.get(body.ctx || '_').length - 1];
         if (!(ctx instanceof ObjectType)) throw new Error('Object type is required here');
         const method: Method = findMethod(ctx, body.propName) as Method;
         validateType([...method.type.args].slice(0, method.type.args.length - 1), method.type.args);
@@ -190,7 +190,7 @@ function evalExprBody(body: ExprBody): ReturnValue {
 
 function evalExpr(expr: Expression): ReturnValue {
     const ctx = evalExprBodies(expr.args);
-    context.set(context.get('_default').pop() as string, ctx);
+    context.set(context.get('_default')[context.get('_default').length - 1] as string, ctx);
     if (expr.ctx) {
         return evalExpr(expr.ctx);
     }
@@ -224,7 +224,8 @@ function methodCall(methodCall: Call): ReturnValue {
             args.push(b(evalExpr(arg)));
         }
     }
-    const ctx = context.get(context.get('_default').pop() as string || '_').pop();
+    const arr = context.get(context.get('_default')[context.get('_default').length - 1] as string || '_');
+    const ctx = arr[arr.length - 1];
     if (!(ctx instanceof ObjectType)) throw new Error('Not a context object');
     const methodToExecute = findMethod(ctx, methodCall.name);
     if (methodToExecute) {
@@ -251,7 +252,7 @@ function evalSigma(object: Sigma | ObjectType, parentCall: CutExpr): ReturnValue
         context.set('_', object);
     } else {
         const ctx = evalSigma(object.objectType, object.call);
-        context.set(context.get('_default').pop() as string || '_', ctx);
+        context.set(context.get('_default')[context.get('_default').length - 1] as string || '_', ctx);
     }
     return resultOfCall(parentCall);
 }
