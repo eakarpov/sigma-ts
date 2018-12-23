@@ -1,5 +1,5 @@
 import {
-    sigma,
+    sigma, sigma2,
 } from './objects';
 import {
     Sigma,
@@ -199,10 +199,10 @@ function evalExpr(expr: Expression): ReturnValue {
 
 function b(body: ReturnValue) {
     if (typeof body === 'number') {
-        if (parseInt(body.toString()) === body) {
-            return new Int(body);
-        } else {
+        if (body.toString().indexOf(".") != -1) {
             return new Float(body);
+        } else {
+            return new Int(body);
         }
     }
     if (body instanceof ObjectType) {
@@ -240,8 +240,12 @@ function methodCall(methodCall: Call): ReturnValue {
             const outputType = type[type.length - 1];
             validateArgs([outputType], { ...methodToExecute, args: [res] } as any as Call);
             return res;
+        } else {
+            const res = evalBody(methodToExecute.body, args);
+            const outputType = type[type.length - 1];
+            validateArgs([outputType], { ...methodToExecute, args: [res] } as any as Call);
+            return res;
         }
-        return evalBody(methodToExecute.body);
     } else {
         throw new Error('Method not found');
     }
@@ -272,6 +276,6 @@ function evalMain(sigma: Sigma): string {
 }
 
 void function () {
-    console.log(sigma);
-    console.log(evalMain(sigma));
+    /*console.log(evalMain(sigma));*/
+    console.log(evalMain(sigma2));
 }();
