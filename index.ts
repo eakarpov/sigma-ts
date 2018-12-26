@@ -62,7 +62,7 @@ function evalBody(body: Value, args?: Argument[]): ReturnValue {
     if (body instanceof ObjectType) {
         return body;
     }
-    return body.value;
+    return body;
 }
 
 function evalParam(param: Parameter): ReturnValue {
@@ -75,7 +75,7 @@ function evalParam(param: Parameter): ReturnValue {
             return res;
         }
         if (res instanceof Int || res instanceof Float) {
-            return res.value;
+            return res;
         }
         throw new Error('Not a valid type');
     } else {
@@ -83,14 +83,14 @@ function evalParam(param: Parameter): ReturnValue {
             return param;
         }
         if (param instanceof Int || param instanceof Float) {
-            return param.value;
+            return param;
         }
         return context.get(param.ctx as string)[context.get(param.ctx as string).length - 1] as ReturnValue;
     }
 }
 
 function evalExprBodies(body: ExprBody[]): ReturnValue {
-    let res: ReturnValue = 0;
+    let res: ReturnValue = new Int(0);
     body.forEach(b => {
         res = evalExprBody(b);
     });
@@ -102,9 +102,10 @@ function getNewMethod(method: Method, ctx: ObjectType): Method {
         const body = evalExprBodies(method.body.args);
         if (body instanceof ObjectType) {
             return new Method(method.name, method.type, method.ctx, body);
-        } else {
-            throw new Error('ObjectType expected');
+        // } else {
+        //     throw new Error('ObjectType expected');
         }
+
     } else if (method.body instanceof Lambda) {
         return new Method(method.name, method.type, ctx, method.body)
     }
@@ -178,9 +179,10 @@ function evalExprBody(body: ExprBody): ReturnValue {
     }
     if (body instanceof Function) {
         if (body.operand instanceof Add) {
-            return c(evalParam(body.arg1)) + c(evalParam(body.arg2));
+            const res = c(evalParam(body.arg1)) + c(evalParam(body.arg2));
+            return body.arg1 instanceof Float ? new Float(res) : new Int(res);
         }
-        return 0;
+        return new Int(0);
     }
     if (body instanceof Parameter) {
         return evalParam(body);
@@ -198,13 +200,6 @@ function evalExpr(expr: Expression): ReturnValue {
 }
 
 function b(body: ReturnValue) {
-    if (typeof body === 'number') {
-        if (body.toString().indexOf(".") != -1) {
-            return new Float(body);
-        } else {
-            return new Int(body);
-        }
-    }
     if (body instanceof ObjectType) {
         throw new Error('Not implemented!');
     }

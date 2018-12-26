@@ -14,7 +14,7 @@ export class Substring {}
 export class Multiply {}
 export class Divide {}
 
-export type ReturnValue = number|ObjectType;
+export type ReturnValue = Int|Float|ObjectType;
 
 export class Parameter {
   constructor(public ctx: ParameterValue, public methodCall?: Call) {
@@ -87,10 +87,17 @@ export class Expression {
 export class Int {
   constructor(public value: number) {
   }
+
+  public toString() {
+    return this.value.toString();
+  }
 }
 
 export class Float {
   constructor(public value: number) {
+  }
+  public toString() {
+      return this.value.toString();
   }
 }
 

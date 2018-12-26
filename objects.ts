@@ -125,9 +125,9 @@ import {
                     null,
                     [new Call('this', 'arg')]
                   ))
-                ]), new Call(null, 'enter', [new Float(5.0)])
+                ]), new Call(null, 'enter', [new Float(5.1)])
               ), new Call(null, 'add')
-            ), new Call(null, 'enter', [new Float(3.0)])
+            ), new Call(null, 'enter', [new Float(3.2)])
           ), new Call(null, 'sub')
         ), new Call(null, 'enter', [new Float(-2.2)])
       ), new Call(null, 'equals')
