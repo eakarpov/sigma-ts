@@ -10,6 +10,7 @@ export type Argument = Lambda | InputValue | Expression;
 export type Operation = Add | Substring | Multiply | Divide;
 
 export class Add {}
+export class Sub {}
 export class Substring {}
 export class Multiply {}
 export class Divide {}

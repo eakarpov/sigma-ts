@@ -20,7 +20,7 @@ import {
     Parameter,
     Add,
     Value,
-    Argument, Type,
+    Argument, Type, lazy, Body, LambdaArg,
 } from './types';
 import {context, ContextType} from './dictionary';
 
@@ -91,23 +91,28 @@ function evalParam(param: Parameter): ReturnValue {
 
 function evalExprBodies(body: ExprBody[]): ReturnValue {
     let res: ReturnValue = new Int(0);
+    // console.log(body);
     body.forEach(b => {
         res = evalExprBody(b);
     });
     return res;
 }
 
-function getNewMethod(method: Method, ctx: ObjectType): Method {
+function getNewMethod(method: Method, ctx: ObjectType, mupdate: MethodUpdate): Method {
+    // console.log(body);
+    const bodyB = lazy(() => c(b(a(mupdate))));
+    const bodyC = typeof method.ctx === 'string' ? bodyB() : bodyB;
+
     if (method.body instanceof Expression) {
         const body = evalExprBodies(method.body.args);
         if (body instanceof ObjectType) {
-            return new Method(method.name, method.type, method.ctx, body);
+            return new Method(method.name, method.type, method.ctx, bodyC);
         // } else {
         //     throw new Error('ObjectType expected');
         }
 
     } else if (method.body instanceof Lambda) {
-        return new Method(method.name, method.type, ctx, method.body)
+        return new Method(method.name, method.type, ctx, bodyC)
     }
     return method;
 }
@@ -115,9 +120,6 @@ function getNewMethod(method: Method, ctx: ObjectType): Method {
 function c(value: ReturnValue): number {
     if (value instanceof Int || value instanceof Float) {
         return value.value;
-    }
-    if (typeof value === 'number') {
-        return value;
     }
     return 0;
 }
@@ -150,6 +152,74 @@ function validateType(type: Array<string|Type>, args: Array<string|Type>) {
     }
 }
 
+function getFromArgs(args: LambdaArg[], mArg: Parameter) {
+    for (const arg of args) {
+        if (arg.name === mArg.ctx) return true;
+    }
+    return false;
+}
+
+function attributeExpression(mtd: Expression, args: LambdaArg[]) {
+//     let index = 0;
+//     for (let arg of mtd.args) {
+//         if (arg instanceof Parameter) {
+//             arg = evalExprBody(arg);
+//             if (!(arg instanceof ObjectType)) {
+//                 arg = arg[arg._ctx];
+//             }
+//             mtd.args[index] = arg;
+//         }
+//         if (arg instanceof MethodCall) {
+//             // validate context
+//             for (const mArg of arg.args) {
+//                 if (!getFromArgs(args, mArg)) {
+//                     if (mArg instanceof Parameter) {
+//                         // arg.args[index] = evalExprBody(ctx, mArg);
+//                         const res = evalExprBody(mArg);
+//                         arg.args[index] = res[res._ctx];
+//                     }
+//                 }
+//             }
+//         }
+//         index++;
+//     }
+//     return mtd;
+}
+
+function attributeBody(body: Expression, args: LambdaArg[]) {
+    if (body instanceof Expression) {
+        return attributeExpression(body, args);
+    }
+    return body;
+}
+
+function attribution(func: Body) {
+    if (func instanceof Lambda) {
+        const args = func.args;
+        // func.body = attributeBody(func.body, args);
+        // something to do
+    }
+    return func;
+}
+
+function a(method: MethodUpdate): ReturnValue {
+    // console.log(method.body);
+    if (method.body instanceof Parameter) {
+        if (!method.body.methodCall) {
+            if (method.body.ctx instanceof ObjectType) {
+                return method.body.ctx;
+            }
+            return <ObjectType> context.get(<string> method.body.ctx).slice(-1).pop();
+        } else {
+            return methodCall(method.body.methodCall);
+        }
+    // } else if (method.body instanceof Lambda) {
+    //     return attribution(method.body);
+    } else {
+        return evalBody(method.body);
+    }
+}
+
 function evalExprBody(body: ExprBody): ReturnValue {
     if (body instanceof FieldUpdate) {
         const ctx = context.get(body.ctx || '_')[context.get(body.ctx || '_').length - 1];
@@ -173,11 +243,12 @@ function evalExprBody(body: ExprBody): ReturnValue {
         if (!(ctx instanceof ObjectType)) throw new Error('Object type is required here');
         const method: Method = findMethod(ctx, body.propName) as Method;
         validateType([...method.type.args].slice(0, method.type.args.length - 1), method.type.args);
-        const newMethod = getNewMethod(method, ctx);
+        const newMethod = getNewMethod(method, ctx, body);
         validateType([method.type.args[method.type.args.length - 1]], [method.type.args[method.type.args.length - 1]]);
         return setMethod(ctx, newMethod);
     }
     if (body instanceof Function) {
+        // console.log(body);
         if (body.operand instanceof Add) {
             const res = c(evalParam(body.arg1)) + c(evalParam(body.arg2));
             return body.arg1 instanceof Float ? new Float(res) : new Int(res);
@@ -191,11 +262,12 @@ function evalExprBody(body: ExprBody): ReturnValue {
 }
 
 function evalExpr(expr: Expression): ReturnValue {
+    if (expr.ctx) {
+        evalExpr(expr.ctx);
+    }
     const ctx = evalExprBodies(expr.args);
     context.set(context.get('_default')[context.get('_default').length - 1] as string, ctx);
-    if (expr.ctx) {
-        return evalExpr(expr.ctx);
-    }
+
     return ctx;
 }
 
@@ -220,6 +292,7 @@ function methodCall(methodCall: Call): ReturnValue {
         }
     }
     const arr = context.get(context.get('_default')[context.get('_default').length - 1] as string || '_');
+    console.log(arr);
     const ctx = arr[arr.length - 1];
     if (!(ctx instanceof ObjectType)) throw new Error('Not a context object');
     const methodToExecute = findMethod(ctx, methodCall.name);
@@ -234,6 +307,7 @@ function methodCall(methodCall: Call): ReturnValue {
             const res = evalBody(methodToExecute.body, args);
             const outputType = type[type.length - 1];
             validateArgs([outputType], { ...methodToExecute, args: [res] } as any as Call);
+            context.remove(methodToExecute.ctx as string);
             return res;
         } else {
             const res = evalBody(methodToExecute.body, args);

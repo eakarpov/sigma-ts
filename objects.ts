@@ -15,6 +15,7 @@ import {
     Sigma,
     Type,
     Add,
+    Sub,
   } from './types';
 
   export const sigma = new Sigma(
@@ -99,7 +100,7 @@ import {
                       null,
                       [new Function(
                         new Parameter('self', new Call(null, 'acc')),
-                        '+',
+                        new Add(),
                         new Parameter('self', new Call(null, 'arg'))
                       )]
                     ))]
@@ -116,7 +117,7 @@ import {
                       null,
                       [new Function(
                         new Parameter('self', new Call(null, 'acc')),
-                        '-',
+                        new Sub(),
                         new Parameter('self', new Call(null, 'arg'))
                       )]
                     ))]
