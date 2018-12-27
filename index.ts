@@ -20,7 +20,7 @@ import {
     Parameter,
     Add,
     Value,
-    Argument, Type, lazy, Body, LambdaArg,
+    Argument, Type, lazy, Body, LambdaArg, Sub,
 } from './types';
 import {context, ContextType} from './dictionary';
 
@@ -251,6 +251,10 @@ function evalExprBody(body: ExprBody): ReturnValue {
         // console.log(body);
         if (body.operand instanceof Add) {
             const res = c(evalParam(body.arg1)) + c(evalParam(body.arg2));
+            return body.arg1 instanceof Float ? new Float(res) : new Int(res);
+        }
+        if (body.operand instanceof Sub) {
+            const res = c(evalParam(body.arg1)) - c(evalParam(body.arg2));
             return body.arg1 instanceof Float ? new Float(res) : new Int(res);
         }
         return new Int(0);
