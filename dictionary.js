@@ -1,58 +1,45 @@
-import { 
-    ObjectType, Call, Lambda, Int, Float, Expression,
- } from './types';
-
-export interface DictionaryPair<K, V> {
-    key: K;
-    value: V;
-}
-
-function isUndefined(obj: any): obj is undefined {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+function isUndefined(obj) {
     return (typeof obj) === 'undefined';
 }
-
-function objContains(obj: object, prop: string) {
+function objContains(obj, prop) {
     return obj.hasOwnProperty(prop);
 }
-
-function arrRemove<T>(array: T[]): boolean {
+function arrRemove(array) {
     // const index = array.findIndex(e => e === item);
     // if (index < 0) {
     //     return false;
     // }
     // array.splice(index, 1);
-    if (array.length === 0) return false;
+    if (array.length === 0)
+        return false;
     array.pop();
     return true;
 }
-
-class Dictionary<K, V> {
-    protected table: { [key: string]: DictionaryPair<K, V> };
-    protected length: number;
-
+class Dictionary {
     constructor() {
         this.table = {};
         this.length = 0;
     }
-
-    get(key: K): V | undefined {
-        const pair: DictionaryPair<K, V> = this.table[key.toString()];
+    get(key) {
+        const pair = this.table[key.toString()];
         if (isUndefined(pair)) {
             return undefined;
         }
         return pair.value;
     }
-
-    set(key: K, value: V): V | undefined {
+    set(key, value) {
         if (isUndefined(key) || isUndefined(value)) {
             return undefined;
         }
-        let toReturn: V | undefined;
-        const previous: DictionaryPair<K, V> = this.table[key.toString()];
+        let toReturn;
+        const previous = this.table[key.toString()];
         if (isUndefined(previous)) {
             this.length++;
             toReturn = undefined;
-        } else {
+        }
+        else {
             toReturn = previous.value;
         }
         this.table[key.toString()] = {
@@ -61,9 +48,8 @@ class Dictionary<K, V> {
         };
         return toReturn;
     }
-
-    remove(key: K): V | undefined {
-        const previous: DictionaryPair<K, V> = this.table[key.toString()];
+    remove(key) {
+        const previous = this.table[key.toString()];
         if (!isUndefined(previous)) {
             delete this.table[key.toString()];
             this.length--;
@@ -71,45 +57,36 @@ class Dictionary<K, V> {
         }
         return undefined;
     }
-    
-    containsKey(key: K): boolean {
-        return !isUndefined(this.get(key))
+    containsKey(key) {
+        return !isUndefined(this.get(key));
     }
-
-    size(): number {
+    size() {
         return this.length;
     }
-
-    isEmpty(): boolean {
+    isEmpty() {
         return this.length <= 0;
     }
-
-    clear(): void {
+    clear() {
         this.table = {};
         this.length = 0;
     }
 }
-
-export default class MultiDictionary<K, V> {
-    private dict: Dictionary<K, Array<V>>;
-
+class MultiDictionary {
     constructor() {
-        this.dict = new Dictionary<K, Array<V>>();
+        this.dict = new Dictionary();
     }
-
-    get(key: K): V[] {
-        const values: Array<V>|undefined = this.dict.get(key);
+    get(key) {
+        const values = this.dict.get(key);
         if (isUndefined(values)) {
             return [];
         }
         return values.slice();
     }
-    
-    set(key: K, value: V): boolean {
+    set(key, value) {
         if (isUndefined(key) || isUndefined(value)) {
             return false;
         }
-        const array: Array<V>|undefined = this.dict.get(key);
+        const array = this.dict.get(key);
         if (isUndefined(array)) {
             this.dict.set(key, [value]);
             return true;
@@ -120,8 +97,7 @@ export default class MultiDictionary<K, V> {
         array.push(value);
         return true;
     }
-
-    remove(key: K): boolean {
+    remove(key) {
         const array = this.dict.get(key);
         if (!isUndefined(array) && arrRemove(array)) {
             if (array.length === 0) {
@@ -131,23 +107,19 @@ export default class MultiDictionary<K, V> {
         }
         return false;
     }
-
-    containsKey(key: K): boolean {
+    containsKey(key) {
         return this.dict.containsKey(key);
     }
-
-    size(): number {
+    size() {
         return this.dict.size();
     }
-
-    isEmpty(): boolean {
+    isEmpty() {
         return this.dict.isEmpty();
     }
-
-    clear(): void {
+    clear() {
         this.dict.clear();
     }
 }
-
-export type ContextType = ObjectType | string | number | boolean | Call | Lambda | Int | Float | Expression;
-export const context = new MultiDictionary<string, ContextType>();
+exports.default = MultiDictionary;
+exports.context = new MultiDictionary();
+//# sourceMappingURL=dictionary.js.map

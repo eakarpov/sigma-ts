@@ -100,7 +100,7 @@ function evalExprBodies(body: ExprBody[]): ReturnValue {
 
 function getNewMethod(method: Method, ctx: ObjectType, mupdate: MethodUpdate): Method {
     // console.log(body);
-    const bodyB = lazy(() => c(b(a(mupdate))));
+    const bodyB = lazy(() => a(mupdate));
     const bodyC = typeof method.ctx === 'string' ? bodyB() : bodyB;
 
     if (method.body instanceof Expression) {
@@ -202,7 +202,7 @@ function attribution(func: Body) {
     return func;
 }
 
-function a(method: MethodUpdate): ReturnValue {
+function a(method: MethodUpdate): ReturnValue|Lambda|Body {
     // console.log(method.body);
     if (method.body instanceof Parameter) {
         if (!method.body.methodCall) {
@@ -215,9 +215,8 @@ function a(method: MethodUpdate): ReturnValue {
         }
     // } else if (method.body instanceof Lambda) {
     //     return attribution(method.body);
-    } else {
-        return evalBody(method.body);
     }
+    return method.body;
 }
 
 function evalExprBody(body: ExprBody): ReturnValue {
