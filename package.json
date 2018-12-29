@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/eakarpov/sigma-ts/issues"
   },
-  "homepage": "https://github.com/eakarpov/sigma-ts#readme"
+  "homepage": "https://github.com/eakarpov/sigma-ts#readme",
+  "dependencies": {
+    "immutable": "^4.0.0-rc.12"
+  }
 }

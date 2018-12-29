@@ -1,3 +1,4 @@
+import { Map } from "immutable";
 import {
     sigma, sigma2,
 } from './objects';
@@ -22,8 +23,6 @@ import {
     Value,
     Argument, Type, lazy, Body, LambdaArg, Sub,
 } from './types';
-import {context, ContextType} from './dictionary';
-
 
 function findMethod(object: ObjectType, name: string): Method | Field | undefined {
     for (const method of object.props) {
@@ -43,21 +42,21 @@ function setMethod(ctx: ObjectType, name: Field | Method): ObjectType {
     return res;
 }
 
-function evalLambda(body: Lambda, args?: Argument[]): ReturnValue {
+function evalLambda(context: Map<string, any>, body: Lambda, args?: Argument[]): ReturnValue {
     body.args.forEach((arg, i) => {
         if (args && args[i]) {
             context.set(arg.name, args[i]);
         }
     });
-    return evalExpr(body.body);
+    return evalExpr(context, body.body);
 }
 
-function evalBody(body: Value, args?: Argument[]): ReturnValue {
+function evalBody(context: Map<string, any>, body: Value, args?: Argument[]): ReturnValue {
     if (body instanceof Lambda) {
-        return evalLambda(body, args);
+        return evalLambda(context, body, args);
     }
     if (body instanceof Expression) {
-        return evalExpr(body);
+        return evalExpr(context, body);
     }
     if (body instanceof ObjectType) {
         return body;
@@ -65,9 +64,9 @@ function evalBody(body: Value, args?: Argument[]): ReturnValue {
     return body;
 }
 
-function evalParam(param: Parameter): ReturnValue {
+function evalParam(context: Map<string, any>, param: Parameter): ReturnValue {
     if (param.methodCall) {
-        return methodCall(param.methodCall);
+        return methodCall(context, param.methodCall);
     }
     if (typeof param === 'string') {
         const res = context.get(param)[context.get(param).length - 1];
@@ -85,26 +84,26 @@ function evalParam(param: Parameter): ReturnValue {
         if (param instanceof Int || param instanceof Float) {
             return param;
         }
-        return context.get(param.ctx as string)[context.get(param.ctx as string).length - 1] as ReturnValue;
+        return context.get(param.ctx as string);
     }
 }
 
-function evalExprBodies(body: ExprBody[]): ReturnValue {
+function evalExprBodies(context: Map<string, any>, body: ExprBody[]): ReturnValue {
     let res: ReturnValue = new Int(0);
     // console.log(body);
     body.forEach(b => {
-        res = evalExprBody(b);
+        res = evalExprBody(context, b);
     });
     return res;
 }
 
-function getNewMethod(method: Method, ctx: ObjectType, mupdate: MethodUpdate): Method {
+function getNewMethod(context: Map<string, any>, method: Method, ctx: ObjectType, mupdate: MethodUpdate): Method {
     // console.log(body);
-    const bodyB = lazy(() => a(mupdate));
+    const bodyB = lazy(() => a(context, mupdate));
     const bodyC = typeof method.ctx === 'string' ? bodyB() : bodyB;
 
     if (method.body instanceof Expression) {
-        const body = evalExprBodies(method.body.args);
+        const body = evalExprBodies(context, method.body.args);
         if (body instanceof ObjectType) {
             return new Method(method.name, method.type, method.ctx, bodyC);
         // } else {
@@ -202,16 +201,16 @@ function attribution(func: Body) {
     return func;
 }
 
-function a(method: MethodUpdate): ReturnValue|Lambda|Body {
+function a(context: Map<string, any>, method: MethodUpdate): ReturnValue|Lambda|Body {
     // console.log(method.body);
     if (method.body instanceof Parameter) {
         if (!method.body.methodCall) {
             if (method.body.ctx instanceof ObjectType) {
                 return method.body.ctx;
             }
-            return <ObjectType> context.get(<string> method.body.ctx).slice(-1).pop();
+            return <ObjectType> context.get(<string> method.body.ctx);
         } else {
-            return methodCall(method.body.methodCall);
+            return methodCall(context, method.body.methodCall);
         }
     // } else if (method.body instanceof Lambda) {
     //     return attribution(method.body);
@@ -219,7 +218,7 @@ function a(method: MethodUpdate): ReturnValue|Lambda|Body {
     return method.body;
 }
 
-function evalExprBody(body: ExprBody): ReturnValue {
+function evalExprBody(context: Map<string, any>, body: ExprBody): ReturnValue {
     if (body instanceof FieldUpdate) {
         const ctx = context.get(body.ctx || '_')[context.get(body.ctx || '_').length - 1];
         if (!(ctx instanceof ObjectType)) throw new Error('Object type is required here');
@@ -227,7 +226,7 @@ function evalExprBody(body: ExprBody): ReturnValue {
         if (method) {
             let bd = new Int(0);
             if (body.value instanceof Expression) {
-                bd = b(evalExpr(body.value));
+                bd = b(evalExpr(context, body.value));
             }
             validateType([...method.type.args].slice(0, method.type.args.length - 1), method.type.args);
             const field = new Field(method.name, method.type, bd);
@@ -242,35 +241,34 @@ function evalExprBody(body: ExprBody): ReturnValue {
         if (!(ctx instanceof ObjectType)) throw new Error('Object type is required here');
         const method: Method = findMethod(ctx, body.propName) as Method;
         validateType([...method.type.args].slice(0, method.type.args.length - 1), method.type.args);
-        const newMethod = getNewMethod(method, ctx, body);
+        const newMethod = getNewMethod(context, method, ctx, body);
         validateType([method.type.args[method.type.args.length - 1]], [method.type.args[method.type.args.length - 1]]);
         return setMethod(ctx, newMethod);
     }
     if (body instanceof Function) {
         // console.log(body);
         if (body.operand instanceof Add) {
-            const res = c(evalParam(body.arg1)) + c(evalParam(body.arg2));
+            const res = c(evalParam(context, body.arg1)) + c(evalParam(context, body.arg2));
             return body.arg1 instanceof Float ? new Float(res) : new Int(res);
         }
         if (body.operand instanceof Sub) {
-            const res = c(evalParam(body.arg1)) - c(evalParam(body.arg2));
+            const res = c(evalParam(context, body.arg1)) - c(evalParam(context, body.arg2));
             return body.arg1 instanceof Float ? new Float(res) : new Int(res);
         }
         return new Int(0);
     }
     if (body instanceof Parameter) {
-        return evalParam(body);
+        return evalParam(context, body);
     }
-    return methodCall(body)
+    return methodCall(context, body)
 }
 
-function evalExpr(expr: Expression): ReturnValue {
+function evalExpr(context: Map<string, any>, expr: Expression): ReturnValue {
     if (expr.ctx) {
-        evalExpr(expr.ctx);
+        evalExpr(context, expr.ctx);
     }
-    const ctx = evalExprBodies(expr.args);
-    context.set(context.get('_default')[context.get('_default').length - 1] as string, ctx);
-
+    const ctx = evalExprBodies(context, expr.args);
+    context.set(context.get('_default'), ctx);
     return ctx;
 }
 
@@ -281,7 +279,7 @@ function b(body: ReturnValue) {
     return body;
 }
 
-function methodCall(methodCall: Call): ReturnValue {
+function methodCall(context: Map<string, any>, methodCall: Call): ReturnValue {
     const args: Argument[] = [];
     for (const arg of methodCall.args) {
         if (arg instanceof Lambda) {
@@ -291,12 +289,12 @@ function methodCall(methodCall: Call): ReturnValue {
             args.push(arg);
         }
         if (arg instanceof Expression) {
-            args.push(b(evalExpr(arg)));
+            args.push(b(evalExpr(context, arg)));
         }
     }
-    const arr = context.get(context.get('_default')[context.get('_default').length - 1] as string || '_');
+    const arr = context.get(context.get('_default'));
     console.log(arr);
-    const ctx = arr[arr.length - 1];
+    const ctx = arr;
     if (!(ctx instanceof ObjectType)) throw new Error('Not a context object');
     const methodToExecute = findMethod(ctx, methodCall.name);
     if (methodToExecute) {
@@ -307,13 +305,13 @@ function methodCall(methodCall: Call): ReturnValue {
                 context.set('_default', methodToExecute.ctx);
                 context.set(methodToExecute.ctx, ctx);
             }
-            const res = evalBody(methodToExecute.body, args);
+            const res = evalBody(context, methodToExecute.body, args);
             const outputType = type[type.length - 1];
             validateArgs([outputType], { ...methodToExecute, args: [res] } as any as Call);
             context.remove(methodToExecute.ctx as string);
             return res;
         } else {
-            const res = evalBody(methodToExecute.body, args);
+            const res = evalBody(context, methodToExecute.body, args);
             const outputType = type[type.length - 1];
             validateArgs([outputType], { ...methodToExecute, args: [res] } as any as Call);
             return res;
@@ -323,27 +321,29 @@ function methodCall(methodCall: Call): ReturnValue {
     }
 }
 
-function evalSigma(object: Sigma | ObjectType, parentCall: CutExpr): ReturnValue {
+function evalSigma(context: Map<string, any>, object: Sigma | ObjectType, parentCall: CutExpr): ReturnValue {
+    const map = Map<string, any>();
     if (object instanceof ObjectType) {
-        context.set('_', object);
+        map.set('_', object);
     } else {
-        const ctx = evalSigma(object.objectType, object.call);
-        context.set(context.get('_default')[context.get('_default').length - 1] as string || '_', ctx);
+        const ctx = evalSigma(map, object.objectType, object.call);
+        map.set(context.get('_default'), ctx);
     }
-    return resultOfCall(parentCall);
+    return resultOfCall(map, parentCall);
 }
 
-function resultOfCall(call: CutExpr): ReturnValue {
+function resultOfCall(ctx: Map<string, any>, call: CutExpr): ReturnValue {
     if (call instanceof Call) {
-        return methodCall(call);
+        return methodCall(ctx, call);
     }
-    return evalExprBody(call);
+    return evalExprBody(ctx, call);
 }
 
 function evalMain(sigma: Sigma): string {
-    const ctx = evalSigma(sigma.objectType, sigma.call);
-    context.set('_', ctx);
-    const result = resultOfCall(sigma.call);
+    const a = Map<string, any>();
+    const ctx = evalSigma(a, sigma.objectType, sigma.call);
+    a.set('_', ctx);
+    const result = resultOfCall(a, sigma.call);
     return result.toString();
 }
 
