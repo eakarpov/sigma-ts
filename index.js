@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const immutable_1 = require("immutable");
 const objects_1 = require("./objects");
 const types_1 = require("./types");
-const dictionary_1 = require("./dictionary");
 function findMethod(object, name) {
     for (const method of object.props) {
         if (method.name === name)
@@ -21,32 +21,32 @@ function setMethod(ctx, name) {
     }
     return res;
 }
-function evalLambda(body, args) {
+function evalLambda(context, body, args) {
     body.args.forEach((arg, i) => {
         if (args && args[i]) {
-            dictionary_1.context.set(arg.name, args[i]);
+            context = context.set(arg.name, args[i]);
         }
     });
-    return evalExpr(body.body);
+    return evalExpr(context, body.body);
 }
-function evalBody(body, args) {
+function evalBody(context, body, args) {
     if (body instanceof types_1.Lambda) {
-        return evalLambda(body, args);
+        return evalLambda(context, body, args);
     }
     if (body instanceof types_1.Expression) {
-        return evalExpr(body);
+        return evalExpr(context, body);
     }
     if (body instanceof types_1.ObjectType) {
         return body;
     }
     return body;
 }
-function evalParam(param) {
+function evalParam(context, param) {
     if (param.methodCall) {
-        return methodCall(param.methodCall);
+        return methodCall(context, param.methodCall);
     }
     if (typeof param === 'string') {
-        const res = dictionary_1.context.get(param)[dictionary_1.context.get(param).length - 1];
+        const res = context.get(param)[context.get(param).length - 1];
         if (res instanceof types_1.ObjectType) {
             return res;
         }
@@ -62,23 +62,23 @@ function evalParam(param) {
         if (param instanceof types_1.Int || param instanceof types_1.Float) {
             return param;
         }
-        return dictionary_1.context.get(param.ctx)[dictionary_1.context.get(param.ctx).length - 1];
+        return context.get(param.ctx);
     }
 }
-function evalExprBodies(body) {
+function evalExprBodies(context, body) {
     let res = new types_1.Int(0);
     // console.log(body);
     body.forEach(b => {
-        res = evalExprBody(b);
+        res = evalExprBody(context, b);
     });
     return res;
 }
-function getNewMethod(method, ctx, mupdate) {
+function getNewMethod(context, method, ctx, mupdate) {
     // console.log(body);
-    const bodyB = types_1.lazy(() => a(mupdate));
+    const bodyB = types_1.lazy(() => a(context, mupdate));
     const bodyC = typeof method.ctx === 'string' ? bodyB() : bodyB;
     if (method.body instanceof types_1.Expression) {
-        const body = evalExprBodies(method.body.args);
+        const body = evalExprBodies(context, method.body.args);
         if (body instanceof types_1.ObjectType) {
             return new types_1.Method(method.name, method.type, method.ctx, bodyC);
             // } else {
@@ -173,33 +173,33 @@ function attribution(func) {
     }
     return func;
 }
-function a(method) {
+function a(context, method) {
     // console.log(method.body);
     if (method.body instanceof types_1.Parameter) {
         if (!method.body.methodCall) {
             if (method.body.ctx instanceof types_1.ObjectType) {
                 return method.body.ctx;
             }
-            return dictionary_1.context.get(method.body.ctx).slice(-1).pop();
+            return context.get(method.body.ctx);
         }
         else {
-            return methodCall(method.body.methodCall);
+            return methodCall(context, method.body.methodCall);
         }
         // } else if (method.body instanceof Lambda) {
         //     return attribution(method.body);
     }
     return method.body;
 }
-function evalExprBody(body) {
+function evalExprBody(context, body) {
     if (body instanceof types_1.FieldUpdate) {
-        const ctx = dictionary_1.context.get(body.ctx || '_')[dictionary_1.context.get(body.ctx || '_').length - 1];
+        const ctx = context.get(body.ctx || '_')[context.get(body.ctx || '_').length - 1];
         if (!(ctx instanceof types_1.ObjectType))
             throw new Error('Object type is required here');
         const method = findMethod(ctx, body.propName);
         if (method) {
             let bd = new types_1.Int(0);
             if (body.value instanceof types_1.Expression) {
-                bd = b(evalExpr(body.value));
+                bd = b(evalExpr(context, body.value));
             }
             validateType([...method.type.args].slice(0, method.type.args.length - 1), method.type.args);
             const field = new types_1.Field(method.name, method.type, bd);
@@ -211,38 +211,38 @@ function evalExprBody(body) {
         }
     }
     if (body instanceof types_1.MethodUpdate) {
-        const ctx = dictionary_1.context.get(body.ctx || '_')[dictionary_1.context.get(body.ctx || '_').length - 1];
+        const ctx = context.get(body.ctx || '_')[context.get(body.ctx || '_').length - 1];
         if (!(ctx instanceof types_1.ObjectType))
             throw new Error('Object type is required here');
         const method = findMethod(ctx, body.propName);
         validateType([...method.type.args].slice(0, method.type.args.length - 1), method.type.args);
-        const newMethod = getNewMethod(method, ctx, body);
+        const newMethod = getNewMethod(context, method, ctx, body);
         validateType([method.type.args[method.type.args.length - 1]], [method.type.args[method.type.args.length - 1]]);
         return setMethod(ctx, newMethod);
     }
     if (body instanceof types_1.Function) {
         // console.log(body);
         if (body.operand instanceof types_1.Add) {
-            const res = c(evalParam(body.arg1)) + c(evalParam(body.arg2));
+            const res = c(evalParam(context, body.arg1)) + c(evalParam(context, body.arg2));
             return body.arg1 instanceof types_1.Float ? new types_1.Float(res) : new types_1.Int(res);
         }
         if (body.operand instanceof types_1.Sub) {
-            const res = c(evalParam(body.arg1)) - c(evalParam(body.arg2));
+            const res = c(evalParam(context, body.arg1)) - c(evalParam(context, body.arg2));
             return body.arg1 instanceof types_1.Float ? new types_1.Float(res) : new types_1.Int(res);
         }
         return new types_1.Int(0);
     }
     if (body instanceof types_1.Parameter) {
-        return evalParam(body);
+        return evalParam(context, body);
     }
-    return methodCall(body);
+    return methodCall(context, body);
 }
-function evalExpr(expr) {
+function evalExpr(context, expr) {
     if (expr.ctx) {
-        evalExpr(expr.ctx);
+        evalExpr(context, expr.ctx);
     }
-    const ctx = evalExprBodies(expr.args);
-    dictionary_1.context.set(dictionary_1.context.get('_default')[dictionary_1.context.get('_default').length - 1], ctx);
+    const ctx = evalExprBodies(context, expr.args);
+    context = context.set(context.get('_default'), ctx);
     return ctx;
 }
 function b(body) {
@@ -251,7 +251,7 @@ function b(body) {
     }
     return body;
 }
-function methodCall(methodCall) {
+function methodCall(context, methodCall) {
     const args = [];
     for (const arg of methodCall.args) {
         if (arg instanceof types_1.Lambda) {
@@ -261,12 +261,12 @@ function methodCall(methodCall) {
             args.push(arg);
         }
         if (arg instanceof types_1.Expression) {
-            args.push(b(evalExpr(arg)));
+            args.push(b(evalExpr(context, arg)));
         }
     }
-    const arr = dictionary_1.context.get(dictionary_1.context.get('_default')[dictionary_1.context.get('_default').length - 1] || '_');
+    const arr = context.get(context.get('_default'));
     console.log(arr);
-    const ctx = arr[arr.length - 1];
+    const ctx = arr;
     if (!(ctx instanceof types_1.ObjectType))
         throw new Error('Not a context object');
     const methodToExecute = findMethod(ctx, methodCall.name);
@@ -275,17 +275,17 @@ function methodCall(methodCall) {
         validateArgs([...type].slice(0, type.length - 1), methodCall);
         if (methodToExecute instanceof types_1.Method) {
             if (typeof methodToExecute.ctx === 'string') {
-                dictionary_1.context.set('_default', methodToExecute.ctx);
-                dictionary_1.context.set(methodToExecute.ctx, ctx);
+                context = context.set('_default', methodToExecute.ctx);
+                context = context.set(methodToExecute.ctx, ctx);
             }
-            const res = evalBody(methodToExecute.body, args);
+            const res = evalBody(context, methodToExecute.body, args);
             const outputType = type[type.length - 1];
             validateArgs([outputType], { ...methodToExecute, args: [res] });
-            dictionary_1.context.remove(methodToExecute.ctx);
+            context.remove(methodToExecute.ctx);
             return res;
         }
         else {
-            const res = evalBody(methodToExecute.body, args);
+            const res = evalBody(context, methodToExecute.body, args);
             const outputType = type[type.length - 1];
             validateArgs([outputType], { ...methodToExecute, args: [res] });
             return res;
@@ -295,26 +295,28 @@ function methodCall(methodCall) {
         throw new Error('Method not found');
     }
 }
-function evalSigma(object, parentCall) {
+function evalSigma(context, object, parentCall) {
+    let map = immutable_1.Map();
     if (object instanceof types_1.ObjectType) {
-        dictionary_1.context.set('_', object);
+        map = map.set('_', object);
     }
     else {
-        const ctx = evalSigma(object.objectType, object.call);
-        dictionary_1.context.set(dictionary_1.context.get('_default')[dictionary_1.context.get('_default').length - 1] || '_', ctx);
+        const ctx = evalSigma(map, object.objectType, object.call);
+        map = map.set(context.get('_default'), ctx);
     }
-    return resultOfCall(parentCall);
+    return resultOfCall(map, parentCall);
 }
-function resultOfCall(call) {
+function resultOfCall(ctx, call) {
     if (call instanceof types_1.Call) {
-        return methodCall(call);
+        return methodCall(ctx, call);
     }
-    return evalExprBody(call);
+    return evalExprBody(ctx, call);
 }
 function evalMain(sigma) {
-    const ctx = evalSigma(sigma.objectType, sigma.call);
-    dictionary_1.context.set('_', ctx);
-    const result = resultOfCall(sigma.call);
+    let a = immutable_1.Map();
+    const ctx = evalSigma(a, sigma.objectType, sigma.call);
+    a = a.set('_', ctx);
+    const result = resultOfCall(a, sigma.call);
     return result.toString();
 }
 void function () {

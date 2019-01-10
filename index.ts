@@ -45,7 +45,7 @@ function setMethod(ctx: ObjectType, name: Field | Method): ObjectType {
 function evalLambda(context: Map<string, any>, body: Lambda, args?: Argument[]): ReturnValue {
     body.args.forEach((arg, i) => {
         if (args && args[i]) {
-            context.set(arg.name, args[i]);
+            context = context.set(arg.name, args[i]);
         }
     });
     return evalExpr(context, body.body);
@@ -268,7 +268,7 @@ function evalExpr(context: Map<string, any>, expr: Expression): ReturnValue {
         evalExpr(context, expr.ctx);
     }
     const ctx = evalExprBodies(context, expr.args);
-    context.set(context.get('_default'), ctx);
+    context = context.set(context.get('_default'), ctx);
     return ctx;
 }
 
@@ -302,13 +302,13 @@ function methodCall(context: Map<string, any>, methodCall: Call): ReturnValue {
         validateArgs([...type].slice(0, type.length - 1), methodCall);
         if (methodToExecute instanceof Method) {
             if (typeof methodToExecute.ctx === 'string') {
-                context.set('_default', methodToExecute.ctx);
-                context.set(methodToExecute.ctx, ctx);
+                context = context.set('_default', methodToExecute.ctx);
+                context = context.set(methodToExecute.ctx, ctx);
             }
             const res = evalBody(context, methodToExecute.body, args);
             const outputType = type[type.length - 1];
             validateArgs([outputType], { ...methodToExecute, args: [res] } as any as Call);
-            context.remove(methodToExecute.ctx as string);
+            context = context.remove(methodToExecute.ctx as string);
             return res;
         } else {
             const res = evalBody(context, methodToExecute.body, args);
@@ -322,12 +322,12 @@ function methodCall(context: Map<string, any>, methodCall: Call): ReturnValue {
 }
 
 function evalSigma(context: Map<string, any>, object: Sigma | ObjectType, parentCall: CutExpr): ReturnValue {
-    const map = Map<string, any>();
+    let map = Map<string, any>();
     if (object instanceof ObjectType) {
-        map.set('_', object);
+        map = map.set('_', object);
     } else {
         const ctx = evalSigma(map, object.objectType, object.call);
-        map.set(context.get('_default'), ctx);
+        map = map.set(context.get('_default'), ctx);
     }
     return resultOfCall(map, parentCall);
 }
@@ -340,9 +340,9 @@ function resultOfCall(ctx: Map<string, any>, call: CutExpr): ReturnValue {
 }
 
 function evalMain(sigma: Sigma): string {
-    const a = Map<string, any>();
+    let a = Map<string, any>();
     const ctx = evalSigma(a, sigma.objectType, sigma.call);
-    a.set('_', ctx);
+    a = a.set('_', ctx);
     const result = resultOfCall(a, sigma.call);
     return result.toString();
 }
